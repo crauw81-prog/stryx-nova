@@ -234,16 +234,54 @@ const PREVIEW=new URLSearchParams(location.search).get('preview')||'',TTL=300000
 const clean=a=>(Array.isArray(a)?a:[]).filter(p=>p&&p.id&&p.name).map(p=>({id:String(p.id),code:String(p.id),name:String(p.name),description:String(p.description||''),type:String(p.type||'Camiseta'),brand:String(p.brand||''),
  price:typeof p.price==='number'&&p.price>0?p.price:null,sizes:Array.isArray(p.sizes)?p.sizes:[],colors:Array.isArray(p.colors)?p.colors:[],images:p.image?[p.image]:[],
  status:['disponible','agotado','pendiente'].includes(p.status)?p.status:'pendiente',published:true,demo:false,preview:!!p.preview}));
-async function load(){
- if(!SITE.apiUrl){LIST=PRODUCTS;LSTATE='demo';return}
- let cached=null;try{cached=JSON.parse(sessionStorage.getItem(CK)||'null')}catch(e){}
- if(!PREVIEW&&cached&&Date.now()-cached.t<TTL){LIST=cached.l;LSTATE='ok';return}
- try{const c=new AbortController(),to=setTimeout(()=>c.abort(),10000);
-  const r=await fetch(SITE.apiUrl+(PREVIEW?'?key='+encodeURIComponent(PREVIEW):''),{signal:c.signal});clearTimeout(to);
-  const j=await r.json();if(!r.ok||!j.ok||!Array.isArray(j.products))throw 0;
-  LIST=clean(j.products);LSTATE='ok';
-  if(!PREVIEW)try{sessionStorage.setItem(CK,JSON.stringify({t:Date.now(),l:LIST}))}catch(e){}
- }catch(e){if(!PREVIEW&&cached){LIST=cached.l;LSTATE='stale'}else{LIST=[];LSTATE='error'}}}
+
+function load(){
+ if(!SITE.apiUrl){LIST=PRODUCTS;LSTATE='demo';return Promise.resolve()}
+
+ let cached=null;
+ try{cached=JSON.parse(sessionStorage.getItem(CK)||'null')}catch(e){}
+
+ if(!PREVIEW&&cached&&Date.now()-cached.t<TTL){
+  LIST=cached.l;LSTATE='ok';return Promise.resolve()
+ }
+
+ return new Promise(resolve=>{
+  let finished=false;
+  const callback='snCatalog_'+Date.now()+'_'+Math.floor(Math.random()*100000);
+  const script=document.createElement('script');
+  const timer=setTimeout(()=>finish(false),15000);
+
+  function finish(ok,data){
+   if(finished)return;
+   finished=true;
+   clearTimeout(timer);
+   delete window[callback];
+   script.remove();
+
+   if(ok&&data&&Array.isArray(data.products)){
+    LIST=clean(data.products);
+    LSTATE='ok';
+    if(!PREVIEW){
+     try{sessionStorage.setItem(CK,JSON.stringify({t:Date.now(),l:LIST}))}catch(e){}
+    }
+   }else if(!PREVIEW&&cached){
+    LIST=cached.l;LSTATE='stale';
+   }else{
+    LIST=[];LSTATE='error';
+   }
+   resolve();
+  }
+
+  window[callback]=data=>finish(true,data);
+  script.onerror=()=>finish(false);
+  script.src=SITE.apiUrl+
+   (SITE.apiUrl.includes('?')?'&':'?')+
+   'callback='+callback+
+   (PREVIEW?'&key='+encodeURIComponent(PREVIEW):'');
+  document.head.appendChild(script);
+ });
+}
+
 if(PREVIEW)document.body.insertAdjacentHTML('afterbegin','<div style="position:fixed;bottom:0;left:0;right:0;z-index:60;background:#F5F5F5;color:#080808;text-align:center;padding:6px;font-size:.8rem">Vista previa privada: ves productos no publicados. No compartas este enlace.</div>');
 main.innerHTML='<div class="wrap"><p class="muted">Cargando catálogo…</p></div>';
 load().then(()=>{addEventListener('hashchange',route);route()});
