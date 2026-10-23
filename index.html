@@ -231,9 +231,32 @@ function route(){const [path,qs]=(location.hash.slice(1)||'/').split('?');const 
  if(a==='coleccion')bindCatalog();if(a==='contacto')bindForm();if(a==='producto')bindOpts()}
 /* ---- Catálogo desde Google Sheets (vía Apps Script) con caché de sesión ---- */
 const PREVIEW=new URLSearchParams(location.search).get('preview')||'',TTL=300000,CK='sn_catalog_v1';
-const clean=a=>(Array.isArray(a)?a:[]).filter(p=>p&&p.id&&p.name).map(p=>({id:String(p.id),code:String(p.id),name:String(p.name),description:String(p.description||''),type:String(p.type||'Camiseta'),brand:String(p.brand||''),
- price:typeof p.price==='number'&&p.price>0?p.price:null,sizes:Array.isArray(p.sizes)?p.sizes:[],colors:Array.isArray(p.colors)?p.colors:[],images:p.image?[p.image]:[],
- status:['disponible','agotado','pendiente'].includes(p.status)?p.status:'pendiente',published:true,demo:false,preview:!!p.preview}));
+
+const clean=a=>(Array.isArray(a)?a:[])
+  .filter(p=>p&&p.id&&p.name)
+  .map(p=>({
+    id:String(p.id),
+    code:String(p.id),
+    name:String(p.name),
+    description:String(p.description||''),
+    type:String(p.type||'Camiseta'),
+    brand:String(p.brand||''),
+    price:typeof p.price==='number'&&p.price>0?p.price:null,
+    sizes:Array.isArray(p.sizes)?p.sizes:[],
+    colors:Array.isArray(p.colors)?p.colors:[],
+    images:Array.isArray(p.images)&&p.images.length
+      ?p.images
+      :(p.image?[p.image]:[]),
+    image:p.image||'',
+    variants:Array.isArray(p.variants)?p.variants:[],
+    stock:Number(p.stock||0),
+    status:['disponible','agotado','pendiente'].includes(p.status)
+      ?p.status:'pendiente',
+    published:p.published!==false,
+    demo:false,
+    preview:!!p.preview
+  }));
+
 
 function load(){
  if(!SITE.apiUrl){LIST=PRODUCTS;LSTATE='demo';return Promise.resolve()}
