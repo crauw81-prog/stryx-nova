@@ -179,7 +179,12 @@ coleccion:q=>{const all=pub();const uniq=k=>[...new Set(all.flatMap(p=>[].concat
  <label>Color<select id="fc">${opt(uniq('colors'))}</select></label>
  ${priced?'<label>Precio máx.<input id="fp" type="number" min="0"></label>':''}<button class="btn ghost" type="button" id="fclear" style="align-self:end">Limpiar filtros</button></div>
  <p class="muted" id="count"></p><div class="grid" id="list"></div></div>`},
-producto:id=>{const p=pub().find(x=>x.id===id);if(!p)return views.nf();
+
+producto:id=>{
+ const productId=decodeURIComponent(id);
+ const p=pub().find(x=>x.id===productId);
+ if(!p)return views.nf();
+
  const can=p.status==='disponible'&&!p.demo;const link=contactLink(`Hola, quiero consultar: ${p.name} (${p.code})`);
  return `<div class="wrap"><p><a href="#/coleccion">← Colección</a></p><div class="detail"><div class="ph">${img(p)}${tag(p)}</div><div>
  ${p.brand?`<p class="muted">${esc(p.brand)}</p>`:''}<h1>${esc(p.name)}</h1><p>${price(p)}</p><p class="badge">${STATUS[p.status]}</p><p style="margin:16px 0">${esc(p.description)}</p>
