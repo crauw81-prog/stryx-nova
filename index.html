@@ -218,10 +218,84 @@ function bindForm(){const f=$('#cf');const R={n:v=>v.length<2?'Escribe tu nombre
  f.m.addEventListener('input',()=>{$('#cnt').textContent=f.m.value.trim().length+' de 10 caracteres mínimos'});
  f.addEventListener('submit',ev=>{ev.preventDefault();const bad=['n','e','m'].filter(k=>chk(k));
   $('#res').innerHTML=bad.length?'':'<p class="ok">Datos válidos. Este formulario es una demostración: el mensaje NO se ha enviado. Escríbenos por nuestros canales oficiales cuando estén disponibles.</p>';if(bad.length)f[bad[0]].focus()})}
-function bindOpts(){const upd=()=>{const g=id=>{const x=$(id+' [aria-pressed="true"]');return x?x.textContent:''},s=g('#osz'),c=g('#oco');
-  $('#sel').textContent=s||c?'Seleccionaste: '+[s&&'talla '+s,c&&'color '+c].filter(Boolean).join(', ')+'.':'Elige una talla y un color.';
-  const k=$('#ask');if(k&&k.dataset.base&&SITE.whatsapp)k.href='https://wa.me/'+SITE.whatsapp+'?text='+encodeURIComponent(k.dataset.base+(s?', talla '+s:'')+(c?', color '+c:''))};
- document.querySelectorAll('.opts .opt').forEach(b=>b.addEventListener('click',()=>{b.parentElement.querySelectorAll('.opt').forEach(x=>x.setAttribute('aria-pressed',x===b));upd()}))}
+
+function bindOpts(){
+  const productId = decodeURIComponent(
+    location.hash.split('/')[2].split('?')[0]
+  );
+  const p = pub().find(x => x.id === productId);
+  if (!p) return;
+
+  const upd = () => {
+    const g = id => {
+      const x = $(id + ' [aria-pressed="true"]');
+      return x ? x.textContent.trim() : '';
+    };
+
+    const s = g('#osz');
+    const c = g('#oco');
+    const variants = p.variants || [];
+
+    const variant = variants.find(v =>
+      String(v.size).toLowerCase() === s.toLowerCase() &&
+      String(v.color).toLowerCase() === c.toLowerCase()
+    );
+
+    const sel = $('#sel');
+    const k = $('#ask');
+
+    if (!s || !c) {
+      sel.textContent = 'Elige una talla y un color.';
+      if (k) {
+        k.setAttribute('aria-disabled', 'true');
+        k.style.pointerEvents = 'none';
+      }
+      return;
+    }
+
+    if (!variant) {
+      sel.textContent = 'Combinación no disponible. Consulta antes de pedir.';
+      if (k) {
+        k.setAttribute('aria-disabled', 'true');
+        k.style.pointerEvents = 'none';
+      }
+      return;
+    }
+
+    const available = Number(variant.stock) > 0;
+
+    sel.textContent = available
+      ? 'Talla ' + s + ', color ' + c + ': ' +
+        variant.stock + ' unidades disponibles.'
+      : 'Esta talla está agotada.';
+
+    if (k) {
+      k.setAttribute('aria-disabled', String(!available));
+      k.style.pointerEvents = available ? 'auto' : 'none';
+      k.style.opacity = available ? '1' : '.5';
+
+      if (available && SITE.whatsapp) {
+        k.href = 'https://wa.me/' + SITE.whatsapp + '?text=' +
+          encodeURIComponent(
+            'Hola, quiero consultar: ' + p.name +
+            ', SKU ' + variant.sku +
+            ', talla ' + s + ', color ' + c
+          );
+      }
+    }
+  };
+
+  document.querySelectorAll('.opts .opt').forEach(b => {
+    b.addEventListener('click', () => {
+      b.parentElement.querySelectorAll('.opt').forEach(x => {
+        x.setAttribute('aria-pressed', String(x === b));
+      });
+      upd();
+    });
+  });
+
+  upd();
+}
 
 function route(){const [path,qs]=(location.hash.slice(1)||'/').split('?');const q=Object.fromEntries(new URLSearchParams(qs||''));const [,a,b]=path.split('/');let v,t='';
  switch(a){case'':v=views.home();break;case'coleccion':v=views.coleccion(q);t='Colección';break;case'producto':v=views.producto(b);t='Producto';break;case'marcas':v=views.marcas();t='Marcas';break;case'marca':v=views.marca(b);t='Marca';break;case'nosotros':v=views.nosotros();t='Nosotros';break;case'como-comprar':v=views.comprar();t='Cómo comprar';break;case'faq':v=views.faq();t='Preguntas frecuentes';break;case'contacto':v=views.contacto();t='Contacto';break;case'politica':v=views.politica(b);t='Políticas';break;default:v=views.nf();t='Página no encontrada'}
