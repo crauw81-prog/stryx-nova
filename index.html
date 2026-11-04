@@ -104,9 +104,31 @@ input[aria-invalid="true"],textarea[aria-invalid="true"]{border-color:#ff8a8a}
   </nav>
   <button class="cartbtn" id="cartbtn" aria-label="Ver carrito (vista previa)">Carrito <b>0</b></button>
 </header>
-<aside class="drawer" id="drawer" hidden role="dialog" aria-label="Carrito">
-  <h2>Carrito</h2><p>El carrito es una vista previa. Todavía no se pueden hacer compras ni pagos en esta web. Para pedir una camiseta, usa el botón “Consultar” de cada producto.</p>
-  <button class="btn" id="closecart">Cerrar</button>
+<aside class="drawer" id="drawer" hidden role="dialog" aria-label="Carrito" aria-modal="true">
+  <h2>Tu carrito</h2>
+
+  <div id="cartitems">
+    <p class="muted">Todavía no has agregado productos.</p>
+  </div>
+
+  <div class="cart-total">
+    <p>Subtotal: <strong id="cartsubtotal">$0</strong></p>
+    <p>Total: <strong id="carttotal">$0</strong></p>
+  </div>
+
+  <div class="cart-actions">
+    <button class="btn ghost" id="clearcart" type="button">
+      Vaciar carrito
+    </button>
+
+    <button class="btn" id="checkout" type="button" disabled>
+      Finalizar pedido por WhatsApp
+    </button>
+
+    <button class="btn ghost" id="closecart" type="button">
+      Seguir comprando
+    </button>
+  </div>
 </aside>
 <main id="main" tabindex="-1"></main>
 <footer class="foot">
