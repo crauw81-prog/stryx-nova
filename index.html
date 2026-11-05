@@ -752,6 +752,7 @@ $('#drawer').addEventListener('click', (e) => {
     renderCart();
   }
 });
+console.log('STRYX NOVA: evento del carrito conectado');
 addEventListener('keydown',e=>{if(e.key==='Escape')$('#drawer').hidden=true});
 $('#yr').textContent=new Date().getFullYear();
 const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
