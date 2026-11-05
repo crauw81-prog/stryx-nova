@@ -397,7 +397,73 @@ function bindOpts(){
     });
   });
 
-  updateStatus();
+    const addButton = $('#ask');
+
+  if (addButton) {
+    addButton.addEventListener('click', () => {
+      const color = getColor();
+
+      if (!selectedSizes.size || !color) {
+        alert('Selecciona al menos una talla y un color.');
+        return;
+      }
+
+      const itemsToAdd = [];
+
+      for (const size of selectedSizes) {
+        const variant = getVariant(size, color);
+        const input = [...document.querySelectorAll('.size-quantity')]
+          .find(el => el.dataset.size === size);
+
+        const quantity = input ? Number(input.value) : 0;
+        const stock = variant ? Number(variant.stock) : 0;
+
+        if (!variant || !Number.isInteger(quantity) ||
+            quantity < 1 || quantity > stock) {
+          alert('Revisa la cantidad disponible para la talla ' + size + '.');
+          return;
+        }
+
+        const price = Number(variant.price ?? p.price ?? 0);
+
+        if (!price) {
+          alert('Este producto no tiene un precio válido. Consulta antes de pedir.');
+          return;
+        }
+
+        itemsToAdd.push({
+          id: p.id,
+          sku: variant.sku || p.code,
+          name: p.name,
+          brand: p.brand || '',
+          color,
+          size,
+          quantity,
+          price,
+          image: (p.images && p.images[0]) || p.image || ''
+        });
+      }
+
+      itemsToAdd.forEach(newItem => {
+        const existing = CART.find(item =>
+          item.id === newItem.id &&
+          item.sku === newItem.sku &&
+          item.color === newItem.color &&
+          item.size === newItem.size
+        );
+
+        if (existing) {
+          existing.quantity += newItem.quantity;
+        } else {
+          CART.push(newItem);
+        }
+      });
+
+      renderCart();
+      openCart();
+    });
+  }
+ updateStatus();
 }
 function route(){const [path,qs]=(location.hash.slice(1)||'/').split('?');const q=Object.fromEntries(new URLSearchParams(qs||''));const [,a,b]=path.split('/');let v,t='';
  switch(a){case'':v=views.home();break;case'coleccion':v=views.coleccion(q);t='Colección';break;case'producto':v=views.producto(b);t='Producto';break;case'marcas':v=views.marcas();t='Marcas';break;case'marca':v=views.marca(b);t='Marca';break;case'nosotros':v=views.nosotros();t='Nosotros';break;case'como-comprar':v=views.comprar();t='Cómo comprar';break;case'faq':v=views.faq();t='Preguntas frecuentes';break;case'contacto':v=views.contacto();t='Contacto';break;case'politica':v=views.politica(b);t='Políticas';break;default:v=views.nf();t='Página no encontrada'}
