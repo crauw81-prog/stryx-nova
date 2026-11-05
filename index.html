@@ -20,6 +20,92 @@ h1,h2,h3{font-weight:800;letter-spacing:-.02em;line-height:1}
 .cartbtn,.burger{background:none;border:1px solid var(--line);color:var(--fg);padding:8px 14px;cursor:pointer;font:inherit}
 .burger{display:none;width:44px;height:44px;padding:0;flex-direction:column;gap:6px;justify-content:center;align-items:center;margin-left:auto}.burger i{width:20px;height:1px;background:var(--fg)}
 .drawer{position:fixed;right:0;top:0;bottom:0;width:min(380px,100%);background:var(--g1);z-index:40;padding:32px;display:flex;flex-direction:column;gap:20px;border-left:1px solid var(--line)}.drawer[hidden]{display:none}
+ /* Carrito STRYX NOVA */
+.drawer{
+  padding:24px;
+  overflow-y:auto;
+}
+
+.drawer h2{
+  font-size:1.8rem;
+  letter-spacing:-1px;
+  text-transform:uppercase;
+  border-bottom:1px solid var(--line);
+  padding-bottom:16px;
+}
+
+#cartitems{
+  flex:1;
+  overflow-y:auto;
+  min-height:100px;
+}
+
+#cartitems > div{
+  padding:14px 0;
+  border-bottom:1px solid var(--line);
+}
+
+#cartitems img{
+  border:1px solid var(--line);
+}
+
+#cartitems p{
+  margin:6px 0;
+  font-size:.88rem;
+  color:var(--muted);
+}
+
+#cartitems button{
+  min-width:34px;
+  min-height:34px;
+  padding:6px 10px;
+  background:transparent;
+  color:var(--fg);
+  border:1px solid var(--line);
+  border-radius:4px;
+  cursor:pointer;
+}
+
+#cartitems button[data-action="plus"],
+#cartitems button[data-action="minus"]{
+  font-size:1.1rem;
+  font-weight:700;
+}
+
+#cartitems button[data-action="remove"]{
+  border:0;
+  color:var(--muted);
+  text-decoration:underline;
+  font-size:.78rem;
+}
+
+.cart-total{
+  border-top:1px solid var(--line);
+  padding-top:14px;
+}
+
+.cart-total p{
+  display:flex;
+  justify-content:space-between;
+  font-size:.95rem;
+}
+
+.cart-actions{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.cart-actions button{
+  width:100%;
+}
+
+@media(max-width:480px){
+  .drawer{
+    padding:20px;
+    width:100%;
+  }
+}
 .btn{display:inline-block;border:1px solid var(--fg);background:transparent;color:var(--fg);padding:14px 28px;font:inherit;font-weight:700;letter-spacing:.12em;text-decoration:none;cursor:pointer;transition:.2s;text-transform:uppercase;font-size:.85rem;min-height:44px}
 .btn:hover:not(:disabled){background:var(--fg);color:var(--bg)}.btn:disabled{opacity:.4;cursor:not-allowed}.btn.ghost{border-color:var(--line);color:var(--mut)}
 main{min-height:70vh;outline:none}
@@ -439,6 +525,7 @@ function bindOpts(){
           color,
           size,
           quantity,
+          stock: Number(variant.stock),
           price,
           image: (p.images && p.images[0]) || p.image || ''
         });
@@ -576,20 +663,24 @@ function renderCart(){
     container.innerHTML = CART.map((item, index) => `
       <div style="display:flex;gap:12px;margin:16px 0;align-items:center">
         ${item.image ? `
-          <img
-            src="${esc(item.image)}"
+          <img src="${esc(item.image)}"
             alt="${esc(item.name)}"
-            style="width:72px;height:88px;object-fit:cover;border-radius:8px"
-          >
+            style="width:72px;height:88px;object-fit:cover;border-radius:8px">
         ` : ''}
         <div style="flex:1">
           <strong>${esc(item.name)}</strong>
           <p>${esc(item.brand)} · ${esc(item.color)}</p>
-          <p>Talla ${esc(item.size)} · Cantidad: ${item.quantity}</p>
-          <p>${money(item.price * item.quantity)}</p>
-          <button type="button" class="remove-cart-item" data-index="${index}">
-            Quitar
-          </button>
+          <p>Talla ${esc(item.size)}</p>
+          <p>${money(item.price)} por unidad</p>
+
+          <div style="display:flex;align-items:center;gap:12px">
+            <button type="button" data-action="minus" data-index="${index}">−</button>
+            <strong>${item.quantity}</strong>
+            <button type="button" data-action="plus" data-index="${index}">+</button>
+            <button type="button" data-action="remove" data-index="${index}">Quitar</button>
+          </div>
+
+          <p><strong>${money(item.price * item.quantity)}</strong></p>
         </div>
       </div>
     `).join('');
@@ -611,9 +702,32 @@ function renderCart(){
     );
   }
 
-  container.querySelectorAll('.remove-cart-item').forEach(button => {
+  container.querySelectorAll('button[data-action]').forEach(button => {
     button.addEventListener('click', () => {
-      CART.splice(Number(button.dataset.index), 1);
+      const index = Number(button.dataset.index);
+      const item = CART[index];
+
+      if (!item) return;
+
+      if (button.dataset.action === 'minus') {
+        item.quantity--;
+        if (item.quantity <= 0) CART.splice(index, 1);
+      }
+
+      if (button.dataset.action === 'plus') {
+        const maxStock = Number(item.stock || 0);
+
+        if (maxStock && item.quantity < maxStock) {
+          item.quantity++;
+        } else {
+          alert('No hay más unidades disponibles de esta talla.');
+        }
+      }
+
+      if (button.dataset.action === 'remove') {
+        CART.splice(index, 1);
+      }
+
       renderCart();
     });
   });
@@ -632,6 +746,10 @@ function closeCart(){
 
 $('#cartbtn').onclick = openCart;
 $('#closecart').onclick = closeCart;
+ $('#clearcart').onclick = () => {
+  CART = [];
+  renderCart();
+};
 addEventListener('keydown',e=>{if(e.key==='Escape')$('#drawer').hidden=true});
 $('#yr').textContent=new Date().getFullYear();
 const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
