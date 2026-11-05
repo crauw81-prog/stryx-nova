@@ -746,10 +746,10 @@ function closeCart(){
 
 $('#cartbtn').onclick = openCart;
 $('#closecart').onclick = closeCart;
- $('#clearcart').onclick = () => {
-  CART = [];
+$('#clearcart').addEventListener('click', () => {
+  CART.splice(0, CART.length);
   renderCart();
-};
+});
 addEventListener('keydown',e=>{if(e.key==='Escape')$('#drawer').hidden=true});
 $('#yr').textContent=new Date().getFullYear();
 const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
