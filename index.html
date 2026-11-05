@@ -747,6 +747,7 @@ function closeCart(){
 $('#cartbtn').onclick = openCart;
 $('#closecart').onclick = closeCart;
 $('#clearcart').addEventListener('click', () => {
+  alert('El botón Vaciar carrito respondió.');
   CART.splice(0, CART.length);
   renderCart();
 });
